@@ -32,6 +32,28 @@ pip install deepl
 
 Make sure to also have API keys for the translation services you want to use (GPT, DeepL) and set them as environment variables.
 
+## Usage
+
+You will need to run the script with the --service flag, specifying which translation service you want to use. 
+
+1. For Google Translate:
+
+```
+python tia_portal_translator.py --service google
+```
+
+2. For ChatGPT:
+
+```
+python tia_portal_translator.py --service gpt
+```
+
+3. For DeepL:
+
+```
+python tia_portal_translator.py --service deepl
+```
+
 ## License
 
 This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
