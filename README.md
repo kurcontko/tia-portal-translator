@@ -9,22 +9,24 @@ Before you start using this script, make sure you have the following installed:
 
 * Python: This script requires Python 3.6 or higher. You can download the latest version of Python from the official website.
 
-* Googletrans: This script uses the Googletrans library:
-
-```
-pip install googletrans
-```
 * Openpyxl: This script also requires the Openpyxl library to work with Excel files:
 
 ```
 pip install openpyxl
 ```
-* OpenAI: If you want to use GPT for translations, you will need the OpenAI library:
+
+* Googletrans: If you want to use Google for translations:
+
+```
+pip install googletrans
+```
+
+* OpenAI: If you want to use GPT for translations:
 
 ```
 pip install openai
 ```
-* DeepL: If you want to use DeepL for translations, you will need the DeepL library:
+* DeepL: If you want to use DeepL for translations:
 
 ```
 pip install deepl
