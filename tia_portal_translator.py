@@ -6,21 +6,21 @@ from googletrans import Translator  # use 3.1.0a0 or later
 import openai
 from deepl import Translator as DeepLTranslator
 
-my_excel = 'TIAProjectTexts.xlsx'
-my_excel_sheet_name = "User Texts"
+my_excel = 'IG11-Texts.xlsx'
+my_excel_sheet_name = 'User Texts'
 n_processes = min(os.cpu_count(), 64) #64 is maximum number in Windows, you can try to push the no of processes to the limits, but it can hit your system's stability
 result_excel = f'{my_excel[:-5]}_translated.xlsx'
-source_to_translation = "en-US" 
-destination_to_translation = "es-ES"
+source_to_translation = 'en-US' 
+destination_to_translation = 'pt-PT'
 # Extract the destination language from the column name
 destination_language = destination_to_translation.split('-')[0]
 
 def translate_with_chatgpt(text, api_key, dest_language):
     openai.api_key = api_key
 
-    prompt = f"Translate the following text to {dest_language}:\n{text}"
+    prompt = f'Translate the following text to {dest_language}:\n{text}'
     response = openai.Completion.create(
-        engine="text-davinci-002",
+        engine='text-davinci-002',
         prompt=prompt,
         max_tokens=100,
         n=1,
@@ -84,11 +84,11 @@ if __name__ == '__main__':
        # Check if the API key is required and available
         api_key = None
         if translator_service == 'gpt' or translator_service == 'deepl':
-            api_key_env_var = "OPENAI_API_KEY" if translator_service == 'gpt' else "DEEPL_API_KEY"
+            api_key_env_var = 'OPENAI_API_KEY' if translator_service == 'gpt' else 'DEEPL_API_KEY'
             try:
                 api_key = os.environ[api_key_env_var]
             except KeyError:
-                print(f"Error: {translator_service.upper()} translation requires the {api_key_env_var} environment variable.")
+                print(f'Error: {translator_service.upper()} translation requires the {api_key_env_var} environment variable.')
                 exit(1)
 
         # Read Excel file
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         destination_to_translation_col = find_column_letter(destination_to_translation, ws)
 
         if not source_to_translation_col or not destination_to_translation_col:
-            print("Could not find column names.")
+            print('Could not find column names.')
             exit(1)
 
         # Split data into chunks
@@ -129,4 +129,4 @@ if __name__ == '__main__':
         print(f'Created new file {result_excel}')
         print('Translating finished!')
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f'An error occurred: {e}')
