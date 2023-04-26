@@ -6,12 +6,12 @@ from googletrans import Translator  # use 3.1.0a0 or later
 import openai
 from deepl import Translator as DeepLTranslator
 
-my_excel = 'IG11-Texts.xlsx'
+my_excel = 'TIAPortalTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
 n_processes = min(os.cpu_count(), 64) #64 is maximum number in Windows, you can try to push the no of processes to the limits, but it can hit your system's stability
 result_excel = f'{my_excel[:-5]}_translated.xlsx'
 source_to_translation = 'en-US' 
-destination_to_translation = 'pt-PT'
+destination_to_translation = 'es-ES'
 # Extract the destination language from the column name
 destination_language = destination_to_translation.split('-')[0]
 
