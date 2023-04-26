@@ -36,24 +36,15 @@ Make sure to also have API keys for the translation services you want to use (GP
 
 ## Usage
 
-You will need to run the script with the --service flag, specifying which translation service you want to use. 
-
-1. For Google Translate:
-
-```
-python tia_portal_translator.py --service google
-```
-
-2. For ChatGPT:
+You will need to run the script with the --service flag, specifying which translation service you want to use, as well as with --source and --dest language and region arguments. 
+Here's an example usage for translating from English (United States) to German using Google Translate or GPT:
 
 ```
-python tia_portal_translator.py --service gpt
+python tia_portal_translator.py --service google --source en-US --dest de-DE
 ```
 
-3. For DeepL:
-
 ```
-python tia_portal_translator.py --service deepl
+python tia_portal_translator.py --service gpt --source en-US --dest de-DE
 ```
 
 ## License
