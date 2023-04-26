@@ -10,15 +10,19 @@ my_excel = 'TIAPortalTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
 n_processes = min(os.cpu_count(), 64) #64 is maximum number in Windows, you can try to push the no of processes to the limits, but it can hit your system's stability
 result_excel = f'{my_excel[:-5]}_translated.xlsx'
-source_to_translation = 'en-US' 
-destination_to_translation = 'es-ES'
-# Extract the destination language from the column name
-destination_language = destination_to_translation.split('-')[0]
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Translate an Excel file using Google Translate, GPT, or DeepL.')
+    parser.add_argument('--service', choices=['google', 'gpt', 'deepl'], required=True, help='Choose the translation service (google, gpt, or deepl).')
+    parser.add_argument('--source', required=True, help='Source language and region (e.g., en-US, fr-FR, de-DE).')
+    parser.add_argument('--dest', required=True, help='Destination language and region (e.g., en-US, fr-FR, de-DE).')
+    args = parser.parse_args()
+    return args
 
 def translate_with_chatgpt(text, api_key, dest_language):
     openai.api_key = api_key
 
-    prompt = f'Translate the following text to {dest_language}:\n{text}'
+    prompt = f'Translate to "{dest_language}" language the following text in the quotation: "{text}"'
     response = openai.Completion.create(
         engine='text-davinci-002',
         prompt=prompt,
@@ -28,7 +32,14 @@ def translate_with_chatgpt(text, api_key, dest_language):
         temperature=0.5,
     )
 
-    translated_text = response.choices[0].text.strip()
+    # Remove quotation marks from the prompt if the text doesn't have them
+    if text[0] != '"' and text[-1] != '"':
+        generated_text = response.choices[0].text.strip()
+        generated_text = generated_text.replace('"', '')
+    else:
+        generated_text = response.choices[0].text.strip()
+
+    translated_text = generated_text
     return translated_text
 
 def translate_with_deepl(text, api_key, dest_language):
@@ -68,18 +79,17 @@ def find_column_letter(column_name, ws):
             return cell.column_letter
     return None
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Translate an Excel file using Google Translate, GPT, or DeepL.')
-    parser.add_argument('--service', choices=['google', 'gpt', 'deepl'], required=True, help='Choose the translation service (google, gpt, or deepl).')
-    args = parser.parse_args()
-    return args
-
 if __name__ == '__main__':
     try:
 
         # Parse command-line arguments
         args = parse_arguments()
         translator_service = args.service
+        source_to_translation = args.source
+        destination_to_translation = args.dest
+
+        # Extract the destination language from the column name
+        destination_language = destination_to_translation.split('-')[0]
 
        # Check if the API key is required and available
         api_key = None
