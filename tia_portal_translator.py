@@ -47,7 +47,7 @@ def translate_with_deepl(text, api_key, dest_language):
     translated_text = translator.translate_text(text, target_lang=dest_language)
     return translated_text
 
-def process_frame(chunk_tuple, translator_service, api_key=None):
+def process_frame(chunk_tuple, destination_language, translator_service, api_key=None):
     index, chunk = chunk_tuple
 
     print(f'Translating chunk {index+1}...')
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
         # Use multiprocessing to translate chunks
         pool = mp.Pool(n_processes)
-        result_list = pool.starmap(process_frame, [(chunk_tuple, translator_service, api_key) for chunk_tuple in data_chunks])
+        result_list = pool.starmap(process_frame, [(chunk_tuple, destination_language, translator_service, api_key) for chunk_tuple in data_chunks])
         pool.close()
         pool.join()
 
