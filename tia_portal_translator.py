@@ -6,7 +6,7 @@ from googletrans import Translator  # use 3.1.0a0 or later
 import openai
 from deepl import Translator as DeepLTranslator
 
-my_excel = 'TIAPortalTexts.xlsx'
+my_excel = 'TIAProjectTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
 n_processes = min(os.cpu_count(), 64) #64 is maximum number in Windows, you can try to push the no of processes to the limits, but it can hit your system's stability
 result_excel = f'{my_excel[:-5]}_translated.xlsx'
@@ -19,58 +19,52 @@ def parse_arguments():
     args = parser.parse_args()
     return args
 
-def translate_with_chatgpt(text, api_key, dest_language):
-    openai.api_key = api_key
+class TranslationService:
+    def __init__(self, api_key=None, destination_language=None):
+        self.api_key = api_key
+        self.destination_language = destination_language
 
-    prompt = f'Translate to "{dest_language}" language the following text in the quotation: "{text}"'
-    response = openai.Completion.create(
-        engine='text-davinci-002',
-        prompt=prompt,
-        max_tokens=100,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    )
+    def translate(self, text):
+        pass
 
-    # Remove quotation marks from the prompt if the text doesn't have them
-    if text[0] != '"' and text[-1] != '"':
-        generated_text = response.choices[0].text.strip()
-        generated_text = generated_text.replace('"', '')
-    else:
-        generated_text = response.choices[0].text.strip()
-
-    translated_text = generated_text
-    return translated_text
-
-def translate_with_deepl(text, api_key, dest_language):
-    translator = DeepLTranslator(api_key)
-    translated_text = translator.translate_text(text, target_lang=dest_language)
-    return translated_text
-
-def process_frame(chunk_tuple, destination_language, translator_service, api_key=None):
-    index, chunk = chunk_tuple
-
-    print(f'Translating chunk {index+1}...')
-    translated_chunk = []
-
-    if translator_service == 'google':
+class GoogleTranslationService(TranslationService):
+    def translate(self, text):
         translator = Translator()
-        translated_chunk = [(translator.translate(cell.value, dest=destination_language).text if cell.value else "") for cell in chunk]
-    elif translator_service == 'gpt':
-        for cell in chunk:
-            if cell.value:
-                translated_text = translate_with_chatgpt(cell.value, api_key, destination_language)
-                translated_chunk.append(translated_text)
-            else:
-                translated_chunk.append("")
-    elif translator_service == 'deepl':
-        for cell in chunk:
-            if cell.value:
-                translated_text = translate_with_deepl(cell.value, api_key, destination_language)
-                translated_chunk.append(translated_text)
-            else:
-                translated_chunk.append("")
+        return translator.translate(text, dest=self.destination_language).text
 
+class GPTTranslationService(TranslationService):
+    def translate(self, text):
+        openai.api_key = self.api_key
+        prompt = f'Translate the following text to "{self.destination_language}" language:\n{text}'
+        response = openai.Completion.create(
+            engine='text-davinci-002',
+            prompt=prompt,
+            max_tokens=100,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+        return response.choices[0].text.strip()
+
+class DeepLTranslationService(TranslationService):
+    def translate(self, text):
+        translator = DeepLTranslator(self.api_key)
+        return translator.translate_text(text, target_lang=self.destination_language)
+
+def translation_service_factory(service, api_key=None, destination_language=None):
+    if service == 'google':
+        return GoogleTranslationService(api_key, destination_language)
+    elif service == 'gpt':
+        return GPTTranslationService(api_key, destination_language)
+    elif service == 'deepl':
+        return DeepLTranslationService(api_key, destination_language)
+    else:
+        raise ValueError(f'Invalid service: {service}')
+    
+def process_frame(chunk_tuple, translator_instance):
+    index, chunk = chunk_tuple
+    print(f'Translating chunk {index+1}...')
+    translated_chunk = [(translator_instance.translate(cell.value) if cell.value else ws[destination_to_translation_col][index].value) for cell in chunk]
     return index, translated_chunk
 
 def find_column_letter(column_name, ws):
@@ -91,7 +85,7 @@ if __name__ == '__main__':
         # Extract the destination language from the column name
         destination_language = destination_to_translation.split('-')[0]
 
-       # Check if the API key is required and available
+        # Check if the API key is required and available
         api_key = None
         if translator_service == 'gpt' or translator_service == 'deepl':
             api_key_env_var = 'OPENAI_API_KEY' if translator_service == 'gpt' else 'DEEPL_API_KEY'
@@ -118,9 +112,12 @@ if __name__ == '__main__':
         chunk_size = row_count // n_processes
         data_chunks = [(i, ws[source_to_translation_col][i*chunk_size+1:(i+1)*chunk_size+1]) for i in range(n_processes)]
 
+        # Instantiate the translator
+        translator_instance = translation_service_factory(translator_service, api_key, destination_language)
+
         # Use multiprocessing to translate chunks
         pool = mp.Pool(n_processes)
-        result_list = pool.starmap(process_frame, [(chunk_tuple, destination_language, translator_service, api_key) for chunk_tuple in data_chunks])
+        result_list = pool.starmap(process_frame, [(chunk_tuple, translator_instance) for chunk_tuple in data_chunks])
         pool.close()
         pool.join()
 
@@ -138,5 +135,6 @@ if __name__ == '__main__':
         wb.save(result_excel)
         print(f'Created new file {result_excel}')
         print('Translating finished!')
+
     except Exception as e:
         print(f'An error occurred: {e}')
