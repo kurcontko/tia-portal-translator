@@ -15,10 +15,10 @@ Before you start using this script, make sure you have the following installed:
 pip install openpyxl
 ```
 
-* Googletrans: If you want to use Google for translations:
+* Googletrans: If you want to use Google for translations (please use version 3.1.0a0):
 
 ```
-pip install googletrans
+pip install googletrans==3.1.0a0
 ```
 
 * OpenAI: If you want to use GPT for translations:
