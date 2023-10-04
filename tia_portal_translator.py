@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 from googletrans import Translator  # use 3.1.0a0 or later
 import openai
 from deepl import Translator as DeepLTranslator
+import textwrap
 
 my_excel = 'TIAProjectTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
@@ -61,10 +62,32 @@ def translation_service_factory(service, api_key=None, destination_language=None
     else:
         raise ValueError(f'Invalid service: {service}')
     
-def process_frame(chunk_tuple, translator_instance):
+def process_frame(chunk_tuple, translator_instance, ws, destination_to_translation_col):
     index, chunk = chunk_tuple
     print(f'Translating chunk {index+1}...')
-    translated_chunk = [(translator_instance.translate(cell.value) if cell.value else ws[destination_to_translation_col][index].value) for cell in chunk]
+    translated_chunk = []
+    for cell in chunk:
+        if cell.value:
+            # Split the source text into lines
+            source_lines = cell.value.split('\n')
+
+            # Translate each line separately
+            translated_lines = [translator_instance.translate(line) for line in source_lines]
+
+            # Try to re-wrap the translated lines to match the source lines
+            wrapped_translated_lines = []
+            for source_line, translated_line in zip(source_lines, translated_lines):
+                if len(source_line) > 0:  # Only apply textwrap if the line is not empty
+                    wrapped_translated_line = textwrap.wrap(translated_line, width=len(source_line))
+                    wrapped_translated_lines.extend(wrapped_translated_line)
+                else:
+                    wrapped_translated_lines.append('')  # Append an empty line if the source line was empty
+
+            # Join the lines back together
+            cell_translation = '\n'.join(wrapped_translated_lines)
+            translated_chunk.append(cell_translation)
+        else:
+            translated_chunk.append(ws[destination_to_translation_col][index].value)
     return index, translated_chunk
 
 def find_column_letter(column_name, ws):
@@ -117,7 +140,7 @@ if __name__ == '__main__':
 
         # Use multiprocessing to translate chunks
         pool = mp.Pool(n_processes)
-        result_list = pool.starmap(process_frame, [(chunk_tuple, translator_instance) for chunk_tuple in data_chunks])
+        result_list = pool.starmap(process_frame, [(chunk_tuple, translator_instance, ws, destination_to_translation_col) for chunk_tuple in data_chunks])
         pool.close()
         pool.join()
 
