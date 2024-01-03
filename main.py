@@ -2,15 +2,15 @@ import os
 import multiprocessing as mp
 import argparse
 from openpyxl import load_workbook
-from googletrans import Translator  # use 3.1.0a0 or later
-import openai
-from deepl import Translator as DeepLTranslator
+
 import textwrap
+
 
 my_excel = 'TIAProjectTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
 n_processes = min(os.cpu_count(), 64) #64 is maximum number in Windows, you can try to push the no of processes to the limits, but it can hit your system's stability
 result_excel = f'{my_excel[:-5]}_translated.xlsx'
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Translate an Excel file using Google Translate, GPT, or DeepL.')
@@ -20,37 +20,7 @@ def parse_arguments():
     args = parser.parse_args()
     return args
 
-class TranslationService:
-    def __init__(self, api_key=None, destination_language=None):
-        self.api_key = api_key
-        self.destination_language = destination_language
 
-    def translate(self, text):
-        pass
-
-class GoogleTranslationService(TranslationService):
-    def translate(self, text):
-        translator = Translator()
-        return translator.translate(text, dest=self.destination_language).text
-
-class GPTTranslationService(TranslationService):
-    def translate(self, text):
-        openai.api_key = self.api_key
-        prompt = f'Translate the following text to "{self.destination_language}" language:\n{text}'
-        response = openai.Completion.create(
-            engine='text-davinci-002',
-            prompt=prompt,
-            max_tokens=100,
-            n=1,
-            stop=None,
-            temperature=0.5,
-        )
-        return response.choices[0].text.strip()
-
-class DeepLTranslationService(TranslationService):
-    def translate(self, text):
-        translator = DeepLTranslator(self.api_key)
-        return translator.translate_text(text, target_lang=self.destination_language)
 
 def translation_service_factory(service, api_key=None, destination_language=None):
     if service == 'google':
