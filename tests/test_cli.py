@@ -162,6 +162,47 @@ async def test_main_skips_cache_when_disabled(monkeypatch):
     await cli.main()
 
 
+@pytest.mark.asyncio
+async def test_main_ignores_cache_stats_when_disabled(monkeypatch):
+    def fail_create_cache(*_args, **_kwargs):
+        raise AssertionError("cache creation should be skipped")
+
+    class DummyPipeline:
+        def __init__(self, config, service, run_id=None) -> None:
+            pass
+
+        async def translate_project(self, source, target) -> None:
+            return None
+
+    class FailCacheManager:
+        def __init__(self, _cache) -> None:
+            raise AssertionError("cache stats should be skipped")
+
+    monkeypatch.setattr(cli, "CacheFactory", types.SimpleNamespace(create_cache=fail_create_cache))
+    monkeypatch.setattr(cli, "CacheManager", FailCacheManager)
+    monkeypatch.setattr(cli, "TranslatorPipeline", DummyPipeline)
+    monkeypatch.setattr(cli.TranslationServiceFactory, "create_service", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli, "load_dotenv", lambda: None)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "prog",
+            "--service",
+            "google-free",
+            "--source",
+            "en-US",
+            "--target",
+            "de-DE",
+            "--cache-type",
+            "none",
+            "--cache-stats",
+        ],
+    )
+    await cli.main()
+
+
 def test_main_module_invokes_asyncio_run(monkeypatch):
     import runpy
 

@@ -147,3 +147,73 @@ async def test_pipeline_writes_report(tmp_path: Path, sample_workbook):
     assert len(data) == 2
     assert data[0]["row_num"] == 2
     assert data[0]["translated_text"] == "one-de"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_item_exception_records_error(tmp_path: Path, sample_workbook):
+    """Test that per-item failures are captured in the report."""
+    source_path = sample_workbook("en-US", "de-DE", ["one", "two"], "input.xlsx")
+    output_path = tmp_path / "output.xlsx"
+    report_path = tmp_path / "report.json"
+
+    class ItemErrorService:
+        service_name = "item-error"
+
+        async def translate_batch(self, texts):
+            return [f"{texts[0]}-de", RuntimeError("boom")]
+
+    config = Config(
+        excel_file=str(source_path),
+        output_file=str(output_path),
+        chunk_size=10,
+        report_path=str(report_path),
+    )
+    pipeline = TranslatorPipeline(config, ItemErrorService())
+
+    await pipeline.translate_project("en-US", "de-DE")
+
+    workbook = load_workbook(output_path)
+    sheet = workbook["User Texts"]
+    assert sheet["B2"].value == "one-de"
+    assert sheet["B3"].value is None
+
+    data = json.loads(report_path.read_text(encoding="utf-8"))
+    assert data[1]["error"]
+    assert "item_translate_error" in data[1]["error"]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_invalid_report_extension_fail_fast(tmp_path: Path, sample_workbook):
+    """Test that invalid report extensions raise when fail_fast is enabled."""
+    source_path = sample_workbook("en-US", "de-DE", ["one"], "input.xlsx")
+    output_path = tmp_path / "output.xlsx"
+    report_path = tmp_path / "report.txt"
+
+    config = Config(
+        excel_file=str(source_path),
+        output_file=str(output_path),
+        chunk_size=10,
+        report_path=str(report_path),
+        fail_fast=True,
+    )
+    pipeline = TranslatorPipeline(config, RecordingTranslationService(suffix="-de"))
+
+    with pytest.raises(ValueError, match="Report path must end with .json or .csv"):
+        await pipeline.translate_project("en-US", "de-DE")
+
+
+@pytest.mark.asyncio
+async def test_pipeline_missing_target_column_raises(tmp_path: Path, sample_workbook):
+    """Test that missing target columns raise clear errors."""
+    source_path = sample_workbook("en-US", "fr-FR", ["one"], "input.xlsx")
+    output_path = tmp_path / "output.xlsx"
+
+    config = Config(
+        excel_file=str(source_path),
+        output_file=str(output_path),
+        chunk_size=10,
+    )
+    pipeline = TranslatorPipeline(config, RecordingTranslationService(suffix="-de"))
+
+    with pytest.raises(ValueError, match="Target column 'de-DE' not found"):
+        await pipeline.translate_project("en-US", "de-DE")

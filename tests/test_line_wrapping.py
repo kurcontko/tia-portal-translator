@@ -61,3 +61,11 @@ def test_apply_line_wrapping_no_break_on_words():
     wrapped = apply_line_wrapping(translated_text, source_text, tolerance=1.2)
     # Should not add newlines because can't break the word
     assert "\n" not in wrapped
+
+
+def test_apply_line_wrapping_mismatched_line_counts():
+    """Test that mismatched line counts skip wrapping."""
+    source_text = "line one\nline two"
+    translated_text = "eine sehr lange zeile ohne umbruch"
+    wrapped = apply_line_wrapping(translated_text, source_text, tolerance=1.2)
+    assert wrapped == translated_text

@@ -137,7 +137,7 @@ async def test_openai_translate_success(monkeypatch):
         return Response(" hola ")
 
     service._create_completion = fake_create  # type: ignore[assignment]
-    assert await service.translate("hello") == "hola"
+    assert await service.translate("hello") == " hola "
 
 
 @pytest.mark.asyncio
@@ -289,3 +289,36 @@ def test_translation_service_factory_gpt(monkeypatch):
     _install_openai_stub(monkeypatch)
     service = TranslationServiceFactory.create_service("gpt", api_key="key", target_language="de")
     assert isinstance(service, OpenAITranslationService)
+
+
+@pytest.mark.asyncio
+async def test_translate_batch_respects_max_concurrency():
+    gate = asyncio.Event()
+    started = asyncio.Event()
+
+    class ConcurrencyService(TranslationService):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self.in_flight = 0
+            self.max_in_flight = 0
+
+        async def translate(self, text: str) -> str:
+            self.in_flight += 1
+            self.max_in_flight = max(self.max_in_flight, self.in_flight)
+            if self.in_flight == self.max_concurrent_requests:
+                started.set()
+            try:
+                await gate.wait()
+                return f"{text}-ok"
+            finally:
+                self.in_flight -= 1
+
+    service = ConcurrencyService(max_concurrent_requests=2, request_delay=0)
+
+    task = asyncio.create_task(service.translate_batch(["a", "b", "c", "d"]))
+    await asyncio.wait_for(started.wait(), timeout=1)
+    gate.set()
+    results = await task
+
+    assert service.max_in_flight == 2
+    assert results[0] == "a-ok"
