@@ -1,6 +1,6 @@
 # TIA Portal Translator
 Modern, async-powered tool for translating TIA Portal texts exported to Excel using
-Google Cloud Translate, OpenAI GPT, and DeepL APIs. A legacy script and wrapper
+free Google Cloud Translate, OpenAI/Openrouter API or OpenAI-compatible server, and DeepL APIs. A legacy script and wrapper
 are preserved under `deprecated/`.
 
 ## Getting Started
