@@ -86,6 +86,42 @@ python run_translator.py \
 | `--line-length-tolerance` | Line length multiplier (e.g., 1.2 = 20% longer) | 1.2 |
 | `--verbose` | Enable verbose logging | False |
 
+## Configuration Defaults
+
+These defaults match `Config` and service initialization when CLI flags are omitted:
+
+- Input file: `TIAProjectTexts.xlsx`
+- Output file: `<input_stem>_translated.xlsx` (auto-generated)
+- Sheet name: `User Texts`
+- Chunk size: `100`
+- Max concurrent requests: `10`
+- Request delay: `0.1s`
+- Max retries: `3`
+- Line-length tolerance: `1.2`
+- Cache enabled: `true` (default type `hybrid`)
+- Cache TTL: `168` hours (1 week)
+- Cache locations: platform user cache dir under `tia-portal-translator`
+- OpenAI model: `gpt-4.1-mini` (override with `OPENAI_MODEL`)
+
+## Retry Policy
+
+- Base retry loop: `max_retries` attempts per item (default `3`) with exponential backoff
+  of `2**attempt` seconds after failures.
+- Each request is rate-limited to 10 requests/sec and respects `request_delay` before
+  the provider call.
+- OpenAI uses Tenacity with random exponential backoff (1-60s) for up to
+  `max_retries` attempts; the outer base loop is a single attempt for OpenAI.
+
+## Error Handling
+
+- Per-item errors are captured and written to the output file; translation continues
+  unless `--fail-fast` is set.
+- Batch-level failures or size mismatches mark the entire chunk with an error message
+  and continue (unless `--fail-fast` is set).
+- Logs include structured `event=...` tags with `run_id` and `chunk_id` for easier tracing.
+- Optional reports (`--report`) write JSON/CSV with an `error` field per row; report
+  write errors are logged and only raise when `--fail-fast` is enabled.
+
 ## Local LLM Backends (Ollama, MLX-LM, vLLM)
 
 This project can use any OpenAI-compatible server via the `openai` service.
