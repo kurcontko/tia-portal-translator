@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import perf_counter
-from typing import List, Optional
+from typing import List, Optional, TypeAlias
 
 from asyncio_throttle import Throttler
 
@@ -20,6 +20,9 @@ class BatchMetrics:
 
 class TranslationError(Exception):
     """Custom exception for translation errors."""
+
+
+TranslationOutcome: TypeAlias = str | Exception
 
 
 class TranslationService(ABC):
@@ -51,8 +54,11 @@ class TranslationService(ABC):
     async def translate(self, text: str) -> str:
         """Translate text to target language."""
 
-    async def translate_batch(self, texts: List[str]) -> List[str]:
-        """Translate a batch of texts with throttling."""
+    async def translate_batch(self, texts: List[str]) -> List[TranslationOutcome]:
+        """Translate a batch of texts with throttling.
+
+        Returns a list of translations or exception instances for failed items.
+        """
         self._reset_batch_metrics()
         tasks = []
         for text in texts:
@@ -70,6 +76,10 @@ class TranslationService(ABC):
 
     def _reset_batch_metrics(self) -> None:
         self._last_batch_metrics = BatchMetrics()
+
+    def _get_retry_attempts(self) -> int:
+        """Return attempts for the base retry loop (override for provider retries)."""
+        return self.max_retries
 
     async def _perform_translation(self, text: str) -> str:
         """Perform a single translation attempt with delay and throttling."""
@@ -118,25 +128,27 @@ class TranslationService(ABC):
                 return cached_result
             metrics.cache_misses += 1
 
+        retry_attempts = max(1, self._get_retry_attempts())
+
         async with self._semaphore:
-            for attempt in range(self.max_retries):
+            for attempt in range(retry_attempts):
                 try:
                     logger.debug(
                         "Provider %s attempt %s/%s for: %s...",
                         self.service_name,
                         attempt + 1,
-                        self.max_retries,
+                        retry_attempts,
                         text[:50],
                     )
                     result = await self._perform_translation(text)
                     await self._cache_result(text, result)
                     return result
                 except Exception as exc:
-                    if attempt == self.max_retries - 1:
+                    if attempt == retry_attempts - 1:
                         logger.error(
                             "Provider %s failed after %s attempts: %s",
                             self.service_name,
-                            self.max_retries,
+                            retry_attempts,
                             exc,
                         )
                         raise TranslationError(f"Translation failed: {exc}") from exc
@@ -144,7 +156,7 @@ class TranslationService(ABC):
                         "Provider %s retrying after error on attempt %s/%s: %s",
                         self.service_name,
                         attempt + 1,
-                        self.max_retries,
+                        retry_attempts,
                         exc,
                     )
                     await asyncio.sleep(2 ** attempt)
