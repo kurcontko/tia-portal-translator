@@ -79,3 +79,6 @@ cython_debug/
 
 # MCPs
 .serena
+
+# Data
+fixtures/
