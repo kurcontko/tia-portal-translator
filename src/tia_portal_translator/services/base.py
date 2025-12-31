@@ -130,8 +130,8 @@ class TranslationService(ABC):
 
         retry_attempts = max(1, self._get_retry_attempts())
 
-        async with self._semaphore:
-            for attempt in range(retry_attempts):
+        for attempt in range(retry_attempts):
+            async with self._semaphore:
                 try:
                     logger.debug(
                         "Provider %s attempt %s/%s for: %s...",
@@ -159,7 +159,8 @@ class TranslationService(ABC):
                         retry_attempts,
                         exc,
                     )
-                    await asyncio.sleep(2 ** attempt)
+            # Release semaphore during retry delay to allow other requests
+            await asyncio.sleep(2 ** attempt)
 
         raise TranslationError("Translation failed without retry attempts.")
 
