@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+from uuid import uuid4
 
 from dotenv import load_dotenv
 
@@ -14,6 +15,15 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _format_error(exc: Exception) -> str:
+    return f"{type(exc).__name__}: {exc}"
+
+
+def _log_context(run_id: str, chunk_id: int | str | None = None) -> str:
+    chunk_value = "-" if chunk_id is None else chunk_id
+    return f"run_id={run_id} chunk_id={chunk_value}"
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -148,16 +158,20 @@ async def main() -> None:
     """Main entry point."""
     load_dotenv()
     args = parse_arguments()
+    run_id = uuid4().hex[:12]
 
     if args.dest and args.target and args.dest != args.target:
         raise ValueError("Specify only one of --dest or --target.")
     if not args.target:
         if args.dest:
             args.target = args.dest
-            logger.warning("Using legacy --dest flag; prefer --target.")
+            logger.warning("%s event=legacy_dest_used", _log_context(run_id))
             if args.service == "google":
                 args.service = "google-free"
-                logger.warning("Legacy google service mapped to google-free.")
+                logger.warning(
+                    "%s event=legacy_service_mapped from=google to=google-free",
+                    _log_context(run_id),
+                )
         else:
             raise ValueError("Missing required --target (or legacy --dest).")
 
@@ -195,14 +209,15 @@ async def main() -> None:
                 cache_dir=config.cache_dir,
             )
             logger.info(
-                "Initialized %s cache with TTL %sh",
+                "%s event=cache_init cache_type=%s cache_ttl_hours=%s",
+                _log_context(run_id),
                 config.cache_type,
                 config.cache_ttl_hours,
             )
 
             if args.clear_cache:
                 await cache.clear()
-                logger.info("Cache cleared")
+                logger.info("%s event=cache_cleared", _log_context(run_id))
 
         translation_service = TranslationServiceFactory.create_service(
             args.service,
@@ -214,7 +229,7 @@ async def main() -> None:
             max_retries=config.max_retries,
         )
 
-        translator = TranslatorPipeline(config, translation_service)
+        translator = TranslatorPipeline(config, translation_service, run_id=run_id)
         await translator.translate_project(args.source, args.target)
 
         if cache and args.cache_stats:
@@ -222,7 +237,7 @@ async def main() -> None:
             await cache_manager.print_stats()
 
     except Exception as exc:
-        logger.error("Translation failed: %s", exc)
+        logger.error("%s event=run_failed error=%s", _log_context(run_id), _format_error(exc))
         raise
 
 
