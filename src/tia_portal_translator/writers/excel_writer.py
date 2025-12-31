@@ -26,6 +26,8 @@ class ExcelWriter:
 
     def save_workbook(self) -> None:
         """Save the workbook to the output file."""
+        if not self.config.output_file:
+            raise ValueError("Output file not specified")
         output_path = Path(self.config.output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 

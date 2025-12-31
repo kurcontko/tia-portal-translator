@@ -56,7 +56,8 @@ class SQLiteCache(TranslationCache):
             result = cursor.fetchone()
 
             if result:
-                translated_text, timestamp_str = result
+                translated_text: str = result[0]
+                timestamp_str: str = result[1]
                 timestamp = datetime.fromisoformat(timestamp_str)
 
                 if datetime.now() - timestamp <= timedelta(hours=self.ttl_hours):
@@ -109,7 +110,8 @@ class SQLiteCache(TranslationCache):
                 "SELECT COUNT(*) FROM translations WHERE timestamp < ?",
                 (cutoff_time,),
             )
-            expired_count = cursor.fetchone()[0]
+            count_result = cursor.fetchone()
+            expired_count: int = count_result[0] if count_result else 0
             conn.execute("DELETE FROM translations WHERE timestamp < ?", (cutoff_time,))
             conn.commit()
 
@@ -120,7 +122,8 @@ class SQLiteCache(TranslationCache):
         """Get cache statistics."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM translations")
-            total_entries = cursor.fetchone()[0]
+            count_result = cursor.fetchone()
+            total_entries: int = count_result[0] if count_result else 0
 
             cursor = conn.execute(
                 """

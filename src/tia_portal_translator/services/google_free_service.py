@@ -52,7 +52,7 @@ class GoogleTranslateFreeService(TranslationService):
                     None,
                     lambda: translate_fn(text, dest=self.target_language),
                 )
-            return result.text
+            return str(result.text)
         except Exception as exc:
             logger.error("Google Translate (free) error: %s", exc)
             raise TranslationError(f"Google Translate (free) failed: {exc}") from exc

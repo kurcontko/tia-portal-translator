@@ -32,7 +32,10 @@ class DeepLTranslationService(TranslationService):
         )
         import deepl
 
-        self.translator = deepl.Translator(api_key or os.getenv("DEEPL_API_KEY"))
+        deepl_key = api_key or os.getenv("DEEPL_API_KEY")
+        if not deepl_key:
+            raise TranslationError("DEEPL_API_KEY is required for DeepL service")
+        self.translator = deepl.Translator(deepl_key)
 
     async def translate(self, text: str) -> str:
         """Translate text using DeepL API."""

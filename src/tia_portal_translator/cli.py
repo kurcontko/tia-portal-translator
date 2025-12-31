@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+from typing import Optional, Union
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -21,7 +22,7 @@ def _format_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: {exc}"
 
 
-def _log_context(run_id: str, chunk_id: int | str | None = None) -> str:
+def _log_context(run_id: str, chunk_id: Optional[Union[int, str]] = None) -> str:
     chunk_value = "-" if chunk_id is None else chunk_id
     return f"run_id={run_id} chunk_id={chunk_value}"
 

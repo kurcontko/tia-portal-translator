@@ -35,7 +35,8 @@ class ExcelReader:
 
         for cell in self.worksheet[1]:
             if cell.value == column_name:
-                return cell.column_letter
+                col_letter: str = cell.column_letter
+                return col_letter
         return None
 
     def get_source_texts(self, source_column: str) -> list[tuple[int, str]]:

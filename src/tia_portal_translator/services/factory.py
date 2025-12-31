@@ -22,7 +22,7 @@ class TranslationServiceFactory:
         request_delay: float = 0.1,
         max_retries: int = 3,
     ) -> TranslationService:
-        services = {
+        services: dict[str, type[TranslationService]] = {
             "openai": OpenAITranslationService,
             "gpt": OpenAITranslationService,  # Alias for backward compatibility
             "deepl": DeepLTranslationService,
@@ -37,7 +37,7 @@ class TranslationServiceFactory:
                 f"Available services: {list(services.keys())}"
             )
 
-        return services[key](
+        service: TranslationService = services[key](
             api_key,
             source_language,
             target_language,
@@ -46,3 +46,4 @@ class TranslationServiceFactory:
             request_delay=request_delay,
             max_retries=max_retries,
         )
+        return service

@@ -5,6 +5,7 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from typing import Optional, Union
 from uuid import uuid4
 
 from tia_portal_translator.config import Config
@@ -22,7 +23,7 @@ class TranslationResult:
     row_num: int
     source_text: str
     translated_text: str
-    error: str | None = None
+    error: Optional[str] = None
 
 
 @dataclass
@@ -31,7 +32,7 @@ class CacheTotals:
     misses: int = 0
     available: bool = False
 
-    def add(self, cache_hits: int | None, cache_misses: int | None) -> None:
+    def add(self, cache_hits: Optional[int], cache_misses: Optional[int]) -> None:
         if cache_hits is None or cache_misses is None:
             return
         self.available = True
@@ -87,7 +88,7 @@ def _error_message(event: str, detail: str) -> str:
     return f"{event}: {detail}"
 
 
-def _log_context(run_id: str, chunk_id: int | str | None = None) -> str:
+def _log_context(run_id: str, chunk_id: Optional[Union[int, str]] = None) -> str:
     chunk_value = "-" if chunk_id is None else chunk_id
     return f"run_id={run_id} chunk_id={chunk_value}"
 
@@ -111,12 +112,12 @@ def _log_chunk_metrics(
     chunk_index: int,
     results: list[TranslationResult],
     latency: float,
-    cache_hits: int | None,
-    cache_misses: int | None,
+    cache_hits: Optional[int],
+    cache_misses: Optional[int],
 ) -> None:
     translated, skipped, failed = _count_results(results)
-    cache_hits_value = cache_hits if cache_hits is not None else "n/a"
-    cache_misses_value = cache_misses if cache_misses is not None else "n/a"
+    cache_hits_value = str(cache_hits) if cache_hits is not None else "n/a"
+    cache_misses_value = str(cache_misses) if cache_misses is not None else "n/a"
     logger.info(
         "%s event=chunk_metrics translated=%s skipped=%s failed=%s latency=%.2fs cache_hits=%s cache_misses=%s",
         _log_context(run_id, chunk_index),
@@ -131,8 +132,8 @@ def _log_chunk_metrics(
 
 def _log_run_cache_metrics(run_id: str, cache_totals: CacheTotals) -> None:
     if cache_totals.available:
-        cache_hits_value = cache_totals.hits
-        cache_misses_value = cache_totals.misses
+        cache_hits_value = str(cache_totals.hits)
+        cache_misses_value = str(cache_totals.misses)
     else:
         cache_hits_value = "n/a"
         cache_misses_value = "n/a"
@@ -144,7 +145,7 @@ def _log_run_cache_metrics(run_id: str, cache_totals: CacheTotals) -> None:
     )
 
 
-def _consume_service_metrics(translation_service: TranslationService) -> tuple[int | None, int | None]:
+def _consume_service_metrics(translation_service: TranslationService) -> tuple[Optional[int], Optional[int]]:
     if not hasattr(translation_service, "consume_batch_metrics"):
         return None, None
     batch_metrics = translation_service.consume_batch_metrics()
@@ -192,7 +193,7 @@ class TranslatorPipeline:
         self,
         config: Config,
         translation_service: TranslationService,
-        run_id: str | None = None,
+        run_id: Optional[str] = None,
     ) -> None:
         self.config = config
         self.translation_service = translation_service
@@ -252,9 +253,11 @@ class TranslatorPipeline:
                 texts_to_translate = [text for _, text in chunk]
 
                 try:
-                    translated_texts: list[str | Exception] = (
-                        await self.translation_service.translate_batch(texts_to_translate)
-                    )
+                    batch_result = await self.translation_service.translate_batch(texts_to_translate)
+                    translated_texts: list[Union[str, Exception]] = [
+                        item if isinstance(item, (str, Exception)) else Exception(str(item))
+                        for item in batch_result
+                    ]
 
                 except Exception as exc:
                     error_detail = _format_error(exc)
@@ -267,28 +270,28 @@ class TranslatorPipeline:
                     cache_totals.add(cache_hits, cache_misses)
                     error_message = _error_message("chunk_translate_error", error_detail)
                     if self.config.fail_fast:
-                        chunk_results = [
+                        chunk_failures = [
                             TranslationResult(row_num, source_text, "", error_message)
                             for row_num, source_text in chunk
                         ]
                         _log_chunk_metrics(
                             run_id,
                             chunk_index,
-                            chunk_results,
+                            chunk_failures,
                             perf_counter() - chunk_start,
                             cache_hits,
                             cache_misses,
                         )
                         raise
-                    chunk_results = [
+                    chunk_failures = [
                         TranslationResult(row_num, source_text, "", error_message)
                         for row_num, source_text in chunk
                     ]
-                    results.extend(chunk_results)
+                    results.extend(chunk_failures)
                     _log_chunk_metrics(
                         run_id,
                         chunk_index,
-                        chunk_results,
+                        chunk_failures,
                         perf_counter() - chunk_start,
                         cache_hits,
                         cache_misses,
@@ -311,31 +314,31 @@ class TranslatorPipeline:
                         error_detail,
                     )
                     error_message = _error_message("chunk_size_mismatch", error_detail)
-                    chunk_results = [
+                    chunk_failures = [
                         TranslationResult(row_num, source_text, "", error_message)
                         for row_num, source_text in chunk
                     ]
                     _log_chunk_metrics(
                         run_id,
                         chunk_index,
-                        chunk_results,
+                        chunk_failures,
                         perf_counter() - chunk_start,
                         cache_hits,
                         cache_misses,
                     )
                     if self.config.fail_fast:
                         raise ValueError(error_message)
-                    results.extend(chunk_results)
+                    results.extend(chunk_failures)
                     continue
 
-                chunk_results: list[TranslationResult] = []
+                batch_results: list[TranslationResult] = []
                 for (row_num, source_text), translation in zip(chunk, translated_texts):
-                    error_message = None
+                    item_error: Optional[str] = None
                     if isinstance(translation, Exception):
                         if self.config.fail_fast:
                             raise translation
                         error_detail = _format_error(translation)
-                        error_message = _error_message("item_translate_error", error_detail)
+                        item_error = _error_message("item_translate_error", error_detail)
                         translation_text = ""
                     else:
                         translation_text = translation
@@ -351,18 +354,19 @@ class TranslatorPipeline:
                         row_num=row_num,
                         source_text=source_text,
                         translated_text=translation_text,
-                        error=error_message,
+                        error=item_error,
                     )
-                    results.append(result)
-                    chunk_results.append(result)
+                    batch_results.append(result)
+
                 _log_chunk_metrics(
                     run_id,
                     chunk_index,
-                    chunk_results,
+                    batch_results,
                     perf_counter() - chunk_start,
                     cache_hits,
                     cache_misses,
                 )
+                results.extend(batch_results)
 
             writer.write_translations(
                 [(result.row_num, result.translated_text) for result in results],

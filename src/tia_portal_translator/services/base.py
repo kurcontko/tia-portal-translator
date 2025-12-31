@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Optional, TypeAlias
+from typing import Optional, Union
 
 from asyncio_throttle import Throttler
 
@@ -22,7 +22,7 @@ class TranslationError(Exception):
     """Custom exception for translation errors."""
 
 
-TranslationOutcome: TypeAlias = str | Exception
+TranslationOutcome = Union[str, BaseException]
 
 
 class TranslationService(ABC):
@@ -160,6 +160,8 @@ class TranslationService(ABC):
                         exc,
                     )
                     await asyncio.sleep(2 ** attempt)
+
+        raise TranslationError("Translation failed without retry attempts.")
 
     async def _return_empty(self) -> str:
         """Return empty string for empty inputs."""

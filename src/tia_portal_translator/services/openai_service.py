@@ -97,7 +97,8 @@ class OpenAITranslationService(TranslationService):
             content = response.choices[0].message.content
             if not content:
                 raise TranslationError("OpenAI translation returned an empty response.")
-            return content.strip()
+            result: str = str(content).strip()
+            return result
         except TranslationError as exc:
             logger.error("OpenAI translation error: %s", exc)
             raise

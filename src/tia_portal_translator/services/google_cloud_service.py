@@ -44,7 +44,7 @@ class GoogleTranslationService(TranslationService):
                 None,
                 lambda: self.client.translate(text, target_language=self.target_language),
             )
-            return result["translatedText"]
+            return str(result["translatedText"])
         except Exception as exc:
             logger.error("Google translation error: %s", exc)
             raise TranslationError(f"Google translation failed: {exc}") from exc
