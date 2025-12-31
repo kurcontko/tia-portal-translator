@@ -31,6 +31,26 @@ class FailingBatchService:
         raise RuntimeError("boom")
 
 
+class ShortBatchService:
+    """Mock translation service that returns fewer items than requested."""
+
+    service_name = "short-batch"
+
+    async def translate_batch(self, texts):
+        if not texts:
+            return []
+        return [f"{text}-x" if text else "" for text in texts[:-1]]
+
+
+class LongBatchService:
+    """Mock translation service that returns extra items."""
+
+    service_name = "long-batch"
+
+    async def translate_batch(self, texts):
+        return [f"{text}-x" if text else "" for text in texts] + ["extra"]
+
+
 @pytest.fixture
 def sample_workbook(tmp_path: Path):
     """Create a sample Excel workbook for testing."""
