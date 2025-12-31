@@ -43,25 +43,25 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/your/service-account-key.json
 
 ```bash
 # Free Google Translate (no API key required)
-python tia_portal_translator.py --service google-free --source en-US --target de-DE
+python run_translator.py --service google-free --source en-US --target de-DE
 
 # Module mode (after editable install)
 python -m tia_portal_translator --service google-free --source en-US --target de-DE
 
 # OpenAI GPT
-python tia_portal_translator.py --service openai --source en-US --target de-DE
+python run_translator.py --service openai --source en-US --target de-DE
 
 # DeepL
-python tia_portal_translator.py --service deepl --source en-US --target fr-FR
+python run_translator.py --service deepl --source en-US --target fr-FR
 
 # Google Cloud Translate
-python tia_portal_translator.py --service google --source de-DE --target en-US
+python run_translator.py --service google --source de-DE --target en-US
 ```
 
 ### Advanced
 
 ```bash
-python tia_portal_translator.py \
+python run_translator.py \
   --service openai \
   --source en-US \
   --target de-DE \

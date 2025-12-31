@@ -38,7 +38,7 @@ test:
 	$(VENV)/bin/pytest
 
 build:
-	$(VENV)/bin/pyinstaller --onefile --name Translator tia_portal_translator.py
+	$(VENV)/bin/pyinstaller --onefile --name Translator run_translator.py
 
 clean:
 	rm -rf build dist __pycache__ .pytest_cache .ruff_cache

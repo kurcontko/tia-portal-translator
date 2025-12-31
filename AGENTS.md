@@ -2,11 +2,11 @@
 
 ## Project Summary
 - Async CLI tool that translates TIA Portal Excel exports using OpenAI, DeepL, Google Cloud, or free Google Translate.
-- Root entrypoint: `tia_portal_translator.py` (kept for direct CLI usage).
+- Root entrypoint: `run_translator.py` (kept for direct CLI usage).
 - Source layout: `src/` package with modular services/readers/writers/pipeline.
 
 ## Structure
-- `tia_portal_translator.py`: Entry point wrapper to run the CLI.
+- `run_translator.py`: Entry point wrapper to run the CLI.
 - `src/tia_portal_translator/cli.py`: CLI parsing and orchestration.
 - `src/tia_portal_translator/pipeline.py`: Translation pipeline (chunking, wrapping, IO flow).
 - `src/tia_portal_translator/services/`: Provider implementations.
@@ -45,13 +45,13 @@ make build
 
 ### Run
 ```bash
-python tia_portal_translator.py --service openai --source en-US --target de-DE
-python tia_portal_translator.py --service google-free --source en-US --target de-DE
+python run_translator.py --service openai --source en-US --target de-DE
+python run_translator.py --service google-free --source en-US --target de-DE
 ```
 
 ### Build (PyInstaller)
 ```bash
-pyinstaller --onefile --name Translator tia_portal_translator.py
+pyinstaller --onefile --name Translator run_translator.py
 ```
 
 ### Lint
