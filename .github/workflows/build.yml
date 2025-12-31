@@ -63,10 +63,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller \
-            --onefile \
-            --name Translator \
-            run_translator.py
+          pyinstaller --onefile --name Translator run_translator.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
