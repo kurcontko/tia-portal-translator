@@ -1,7 +1,9 @@
 """Tests for OpenAI service client injection and tenacity retry logic."""
 
-import pytest
+import asyncio
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from tia_portal_translator.services.openai_service import OpenAITranslationService
 
@@ -80,8 +82,12 @@ async def test_openai_empty_response_error():
 
 
 @pytest.mark.asyncio
-async def test_openai_retry_on_failure():
+async def test_openai_retry_on_failure(monkeypatch):
     """Test that tenacity retries on failure."""
+    async def fast_sleep(_seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", fast_sleep)
     mock_client = MagicMock()
     
     # First two calls fail, third succeeds
@@ -103,4 +109,37 @@ async def test_openai_retry_on_failure():
     assert result == "Success after retry"
     
     # Should have been called 3 times (2 failures + 1 success)
-    assert mock_client.chat.completions.create.call_count == 3
+    assert mock_client.chat.completions.create.call_count == service.max_retries
+
+
+@pytest.mark.asyncio
+async def test_openai_translate_batch_single_retry_layer(monkeypatch):
+    """Test that translate_batch does not add a second retry loop."""
+    async def fast_sleep(_seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", fast_sleep)
+
+    mock_client = MagicMock()
+    success_response = MagicMock()
+    success_response.choices = [MagicMock()]
+    success_response.choices[0].message.content = "Success after retry"
+
+    mock_client.chat.completions.create = AsyncMock(
+        side_effect=[
+            Exception("API Error 1"),
+            Exception("API Error 2"),
+            success_response,
+        ]
+    )
+
+    service = OpenAITranslationService(
+        client=mock_client,
+        max_retries=3,
+        request_delay=0,
+    )
+
+    results = await service.translate_batch(["test"])
+
+    assert results[0] == "Success after retry"
+    assert mock_client.chat.completions.create.call_count == service.max_retries

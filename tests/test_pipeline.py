@@ -9,7 +9,12 @@ from openpyxl import load_workbook
 from tia_portal_translator.config import Config
 from tia_portal_translator.pipeline import TranslatorPipeline
 
-from conftest import RecordingTranslationService, FailingBatchService
+from conftest import (
+    RecordingTranslationService,
+    FailingBatchService,
+    ShortBatchService,
+    LongBatchService,
+)
 
 
 @pytest.mark.asyncio
@@ -74,6 +79,52 @@ async def test_pipeline_fail_fast_raises(tmp_path: Path, sample_workbook):
 
     with pytest.raises(RuntimeError):
         await pipeline.translate_project("en-US", "de-DE")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("service_cls", "expected_count", "actual_count", "provider_name"),
+    [
+        (ShortBatchService, 3, 2, "short-batch"),
+        (LongBatchService, 3, 4, "long-batch"),
+    ],
+)
+async def test_pipeline_handles_batch_size_mismatch(
+    tmp_path: Path,
+    sample_workbook,
+    service_cls,
+    expected_count,
+    actual_count,
+    provider_name,
+):
+    """Test that pipeline handles short/long batch responses with errors."""
+    source_path = sample_workbook("en-US", "de-DE", ["one", "two", "three"], "input.xlsx")
+    output_path = tmp_path / "output.xlsx"
+    report_path = tmp_path / "report.json"
+
+    config = Config(
+        excel_file=str(source_path),
+        output_file=str(output_path),
+        chunk_size=10,
+        report_path=str(report_path),
+    )
+    pipeline = TranslatorPipeline(config, service_cls())
+
+    await pipeline.translate_project("en-US", "de-DE")
+
+    workbook = load_workbook(output_path)
+    sheet = workbook["User Texts"]
+    assert sheet["B2"].value is None
+    assert sheet["B3"].value is None
+    assert sheet["B4"].value is None
+
+    data = json.loads(report_path.read_text(encoding="utf-8"))
+    assert len(data) == 3
+    expected_message = f"expected {expected_count} items, got {actual_count}"
+    for entry in data:
+        assert entry["error"]
+        assert provider_name in entry["error"]
+        assert expected_message in entry["error"]
 
 
 @pytest.mark.asyncio

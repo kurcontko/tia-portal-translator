@@ -48,9 +48,10 @@ async def test_main_uses_dest_alias_and_cache_stats(monkeypatch):
             calls["stats"] = True
 
     class DummyPipeline:
-        def __init__(self, config, service) -> None:
+        def __init__(self, config, service, run_id=None) -> None:
             calls["config"] = config
             calls["service"] = service
+            calls["run_id"] = run_id
 
         async def translate_project(self, source, target) -> None:
             calls["translate"] = (source, target)
@@ -132,7 +133,7 @@ async def test_main_skips_cache_when_disabled(monkeypatch):
         raise AssertionError("cache creation should be skipped")
 
     class DummyPipeline:
-        def __init__(self, config, service) -> None:
+        def __init__(self, config, service, run_id=None) -> None:
             pass
 
         async def translate_project(self, source, target) -> None:
