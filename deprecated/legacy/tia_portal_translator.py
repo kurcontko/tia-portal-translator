@@ -1,11 +1,10 @@
-import os
-import multiprocessing as mp
 import argparse
-from openpyxl import load_workbook
-from googletrans import Translator  # use 3.1.0a0 or later
-import openai
-from deepl import Translator as DeepLTranslator
+import multiprocessing as mp
+import os
 import textwrap
+
+from googletrans import Translator  # use 4.0.2 or later
+from openpyxl import load_workbook
 
 my_excel = 'TIAProjectTexts.xlsx'
 my_excel_sheet_name = 'User Texts'
@@ -35,6 +34,7 @@ class GoogleTranslationService(TranslationService):
 
 class GPTTranslationService(TranslationService):
     def translate(self, text):
+        import openai
         openai.api_key = self.api_key
         prompt = f'Translate the following text to "{self.destination_language}" language:\n{text}'
         response = openai.Completion.create(
@@ -49,6 +49,7 @@ class GPTTranslationService(TranslationService):
 
 class DeepLTranslationService(TranslationService):
     def translate(self, text):
+        from deepl import Translator as DeepLTranslator
         translator = DeepLTranslator(self.api_key)
         return translator.translate_text(text, target_lang=self.destination_language)
 
