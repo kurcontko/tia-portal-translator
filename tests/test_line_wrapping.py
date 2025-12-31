@@ -1,6 +1,5 @@
 """Tests for line wrapping functionality."""
 
-import pytest
 
 from tia_portal_translator.pipeline import apply_line_wrapping
 

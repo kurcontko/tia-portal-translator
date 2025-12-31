@@ -1,9 +1,10 @@
-import os
-import multiprocessing as mp
 import argparse
-from openpyxl import load_workbook
-from googletrans import Translator  # use 4.0.2 or later
+import multiprocessing as mp
+import os
 import textwrap
+
+from googletrans import Translator  # use 4.0.2 or later
+from openpyxl import load_workbook
 
 my_excel = 'TIAProjectTexts.xlsx'
 my_excel_sheet_name = 'User Texts'

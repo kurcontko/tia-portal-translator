@@ -7,11 +7,11 @@ import types
 import pytest
 
 from tia_portal_translator.services.base import TranslationError, TranslationService
-from tia_portal_translator.services.factory import TranslationServiceFactory
-from tia_portal_translator.services.openai_service import OpenAITranslationService
-from tia_portal_translator.services.google_free_service import GoogleTranslateFreeService
-from tia_portal_translator.services.google_cloud_service import GoogleTranslationService
 from tia_portal_translator.services.deepl_service import DeepLTranslationService
+from tia_portal_translator.services.factory import TranslationServiceFactory
+from tia_portal_translator.services.google_cloud_service import GoogleTranslationService
+from tia_portal_translator.services.google_free_service import GoogleTranslateFreeService
+from tia_portal_translator.services.openai_service import OpenAITranslationService
 
 
 class DummyCache:

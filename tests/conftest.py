@@ -60,8 +60,8 @@ def sample_workbook(tmp_path: Path):
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "User Texts"
-        sheet[f"A1"] = source_col
-        sheet[f"B1"] = target_col
+        sheet["A1"] = source_col
+        sheet["B1"] = target_col
 
         for idx, value in enumerate(rows, start=2):
             sheet[f"A{idx}"] = value

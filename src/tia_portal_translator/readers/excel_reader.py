@@ -1,7 +1,7 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from tia_portal_translator.config import Config
@@ -38,7 +38,7 @@ class ExcelReader:
                 return cell.column_letter
         return None
 
-    def get_source_texts(self, source_column: str) -> List[Tuple[int, str]]:
+    def get_source_texts(self, source_column: str) -> list[tuple[int, str]]:
         """Get source texts from the specified column."""
         if not self.worksheet:
             raise ValueError("Workbook not loaded")

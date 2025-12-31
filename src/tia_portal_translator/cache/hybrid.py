@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from tia_portal_translator.cache.base import TranslationCache
 
@@ -48,7 +48,7 @@ class HybridCache(TranslationCache):
         self.misses = 0
         logger.info("Hybrid cache cleared")
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get combined cache statistics."""
         memory_stats = await self.memory_cache.get_stats()
         persistent_stats = await self.persistent_cache.get_stats()

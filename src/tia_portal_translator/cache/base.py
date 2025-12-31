@@ -1,6 +1,6 @@
 import hashlib
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class TranslationCache(ABC):
@@ -22,7 +22,7 @@ class TranslationCache(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         raise NotImplementedError
 

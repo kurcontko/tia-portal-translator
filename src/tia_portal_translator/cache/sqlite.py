@@ -2,7 +2,7 @@ import logging
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from tia_portal_translator.cache.base import TranslationCache
 
@@ -116,7 +116,7 @@ class SQLiteCache(TranslationCache):
         logger.info("Cleaned up %s expired cache entries", expired_count)
         return expired_count
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM translations")

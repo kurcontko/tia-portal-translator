@@ -53,7 +53,7 @@ class CacheManager:
     async def import_cache(self, import_path: str) -> None:
         """Import cache from JSON file (for SQLite cache)."""
         if isinstance(self.cache, SQLiteCache):
-            with open(import_path, "r", encoding="utf-8") as f:
+            with open(import_path, encoding="utf-8") as f:
                 import_data = json.load(f)
 
             with sqlite3.connect(self.cache.db_path) as conn:

@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import perf_counter
-from typing import List, Optional, TypeAlias
+from typing import Optional, TypeAlias
 
 from asyncio_throttle import Throttler
 
@@ -54,7 +54,7 @@ class TranslationService(ABC):
     async def translate(self, text: str) -> str:
         """Translate text to target language."""
 
-    async def translate_batch(self, texts: List[str]) -> List[TranslationOutcome]:
+    async def translate_batch(self, texts: list[str]) -> list[TranslationOutcome]:
         """Translate a batch of texts with throttling.
 
         Returns a list of translations or exception instances for failed items.

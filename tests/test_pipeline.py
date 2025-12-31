@@ -6,15 +6,14 @@ from pathlib import Path
 import pytest
 from openpyxl import load_workbook
 
+from conftest import (
+    FailingBatchService,
+    LongBatchService,
+    RecordingTranslationService,
+    ShortBatchService,
+)
 from tia_portal_translator.config import Config
 from tia_portal_translator.pipeline import TranslatorPipeline
-
-from conftest import (
-    RecordingTranslationService,
-    FailingBatchService,
-    ShortBatchService,
-    LongBatchService,
-)
 
 
 @pytest.mark.asyncio

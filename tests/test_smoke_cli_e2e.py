@@ -6,7 +6,6 @@ import pytest
 from openpyxl import load_workbook
 
 import tia_portal_translator.cli as cli
-
 from conftest import RecordingTranslationService
 
 

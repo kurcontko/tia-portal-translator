@@ -5,8 +5,8 @@ Usage:
   python3 scripts/generate_sample_fixture.py
 """
 
-from pathlib import Path
 import zipfile
+from pathlib import Path
 
 
 def main() -> None:

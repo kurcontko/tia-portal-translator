@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from tia_portal_translator.cache.base import TranslationCache
 from tia_portal_translator.cache.entry import CacheEntry
@@ -12,7 +12,7 @@ class MemoryCache(TranslationCache):
     """In-memory translation cache using dictionary."""
 
     def __init__(self, max_size: int = 10000, ttl_hours: int = 24 * 7):
-        self.cache: Dict[str, CacheEntry] = {}
+        self.cache: dict[str, CacheEntry] = {}
         self.max_size = max_size
         self.ttl_hours = ttl_hours
         self.hits = 0
@@ -64,7 +64,7 @@ class MemoryCache(TranslationCache):
         self.misses = 0
         logger.info("Memory cache cleared")
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = self.hits + self.misses
         hit_rate = (self.hits / total_requests * 100) if total_requests > 0 else 0

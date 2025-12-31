@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from tia_portal_translator.cache.base import TranslationCache
 from tia_portal_translator.cache.entry import CacheEntry
@@ -33,7 +33,7 @@ class FileCache(TranslationCache):
 
         if os.path.exists(cache_file):
             try:
-                with open(cache_file, "r", encoding="utf-8") as f:
+                with open(cache_file, encoding="utf-8") as f:
                     data = json.load(f)
 
                 entry = CacheEntry.from_dict(data)
@@ -92,7 +92,7 @@ class FileCache(TranslationCache):
             if filename.endswith(".json"):
                 cache_file = os.path.join(self.cache_dir, filename)
                 try:
-                    with open(cache_file, "r", encoding="utf-8") as f:
+                    with open(cache_file, encoding="utf-8") as f:
                         data = json.load(f)
 
                     entry = CacheEntry.from_dict(data)
@@ -107,7 +107,7 @@ class FileCache(TranslationCache):
         logger.info("Cleaned up %s expired file cache entries", expired_count)
         return expired_count
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_files = len([f for f in os.listdir(self.cache_dir) if f.endswith(".json")])
         cache_size = sum(

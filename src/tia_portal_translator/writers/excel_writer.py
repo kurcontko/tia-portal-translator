@@ -2,7 +2,6 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Tuple
 
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -20,7 +19,7 @@ class ExcelWriter:
         self.workbook = workbook
         self.worksheet = worksheet
 
-    def write_translations(self, translations: List[Tuple[int, str]], target_column: str) -> None:
+    def write_translations(self, translations: list[tuple[int, str]], target_column: str) -> None:
         """Write translations to the target column."""
         for row_num, translation in translations:
             self.worksheet[f"{target_column}{row_num}"].value = translation
@@ -30,14 +29,13 @@ class ExcelWriter:
         output_path = Path(self.config.output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        temp_file = tempfile.NamedTemporaryFile(
+        with tempfile.NamedTemporaryFile(
             dir=output_path.parent,
             prefix=f".{output_path.name}.",
             suffix=output_path.suffix,
             delete=False,
-        )
-        temp_path = Path(temp_file.name)
-        temp_file.close()
+        ) as temp_file:
+            temp_path = Path(temp_file.name)
 
         try:
             self.workbook.save(temp_path)
