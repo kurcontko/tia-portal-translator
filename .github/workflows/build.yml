@@ -1,0 +1,75 @@
+name: Build TIA Translator
+
+on:
+  push:
+    branches: [ main, refactor ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install project with dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run linting
+        run: |
+          ruff check .
+
+      - name: Run tests
+        run: |
+          pytest
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install project (runtime deps only) + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          # install your package from pyproject.toml
+          python -m pip install .
+          # install build tool
+          python -m pip install pyinstaller
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller \
+            --onefile \
+            --name Translator \
+            run_translator.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Translator-${{ matrix.os }}
+          path: dist/Translator*
